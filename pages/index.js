@@ -3,9 +3,17 @@ import Image from 'next/image';
 import Banner from '../components/banner';
 import Card from '../components/card';
 import styles from '../styles/Home.module.css';
-import coffeeStores from '../data/coffee-stores.json';
-
-export default function Home() {
+import coffeeStoresData from '../data/coffee-stores.json';
+/* eslint-disable */
+export async function getStaticProps(context) {
+  /* eslint-enable */
+  return {
+    props: {
+      coffeeStores: coffeeStoresData,
+    },
+  };
+}
+export default function Home({ coffeeStores }) {
   const handleOnBannerBtnClick = () => {
     console.log('button clicked');
   };
@@ -24,16 +32,24 @@ export default function Home() {
         <div className={styles.heroImage}>
           <Image src="/static/hero-image.png" width={700} height={400} />
         </div>
-        <div className={styles.cardLayout}>
-          {coffeeStores.map((store) => (
-            <Card
-              shopLink={`/coffee-stores/${store.id}`}
-              imgUrl={store.imgUrl}
-              title={store.name}
-              className={styles.card}
-            />
-          ))}
-        </div>
+        {coffeeStores.length > 0 && (
+          <>
+            <div className={styles.heading2Wrapper}>
+              <h2 className={styles.heading2}>Toronto Coffee Stores</h2>
+            </div>
+            <div className={styles.cardLayout}>
+              {coffeeStores.map((store) => (
+                <Card
+                  key={store.id}
+                  shopLink={`/coffee-stores/${store.id}`}
+                  imgUrl={store.imgUrl}
+                  title={store.name}
+                  className={styles.card}
+                />
+              ))}
+            </div>
+          </>
+        )}
       </main>
     </div>
   );
