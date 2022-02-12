@@ -2,20 +2,23 @@ import Head from 'next/head';
 import Image from 'next/image';
 import Banner from '../components/banner';
 import Card from '../components/card';
+import useTrackLocation from '../hooks/useTrackLocation';
+import { fetchCoffeeStores } from '../lib/coffe-store';
 import styles from '../styles/Home.module.css';
-import coffeeStoresData from '../data/coffee-stores.json';
-/* eslint-disable */
-export async function getStaticProps(context) {
-  /* eslint-enable */
+
+export async function getStaticProps() {
+  const coffeeStores = await fetchCoffeeStores();
   return {
     props: {
-      coffeeStores: coffeeStoresData,
+      coffeeStores,
     },
   };
 }
 export default function Home({ coffeeStores }) {
+  const { handleTrackLocation, latlong, errorMessage, isLoadingLocation } =
+    useTrackLocation();
   const handleOnBannerBtnClick = () => {
-    console.log('button clicked');
+    handleTrackLocation();
   };
   return (
     <div className={styles.container}>
@@ -26,9 +29,16 @@ export default function Home({ coffeeStores }) {
       </Head>
       <main className={styles.main}>
         <Banner
-          buttonText="View stores nearby"
+          buttonText={
+            isLoadingLocation ? 'Loading coffee stores' : 'View stores nearby'
+          }
           handleOnClick={handleOnBannerBtnClick}
         />
+        {errorMessage && (
+          <div>
+            <p>{errorMessage}</p>
+          </div>
+        )}
         <div className={styles.heroImage}>
           <Image src="/static/hero-image.png" width={700} height={400} />
         </div>
@@ -42,7 +52,10 @@ export default function Home({ coffeeStores }) {
                 <Card
                   key={store.id}
                   shopLink={`/coffee-stores/${store.id}`}
-                  imgUrl={store.imgUrl}
+                  imgUrl={
+                    store.imgUrl ||
+                    'https://images.unsplash.com/photo-1498804103079-a6351b050096?ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&ixlib=rb-1.2.1&auto=format&fit=crop&w=2468&q=80'
+                  }
                   title={store.name}
                   className={styles.card}
                 />

@@ -4,25 +4,24 @@ import Link from 'next/link';
 import { useRouter } from 'next/router';
 import React from 'react';
 import cls from 'classnames';
-import coffeeStoreData from '../../data/coffee-stores.json';
 import styles from '../../styles/coffee-store.module.css';
+import { fetchCoffeeStores } from '../../lib/coffe-store';
 
-export function getStaticProps({ params }) {
+export async function getStaticProps({ params }) {
+  const coffeeStores = await fetchCoffeeStores();
   return {
     props: {
-      coffeeStore: coffeeStoreData.find(
-        (store) => store.id === parseInt(params.id)
-      ),
+      coffeeStore: coffeeStores.find((store) => store.id === params.id),
     },
   };
 }
 
-export function getStaticPaths() {
-  const paths = coffeeStoreData.map((store) => ({
-    params: {
-      id: store.id.toString(),
-    },
+export async function getStaticPaths() {
+  const coffeeStores = await fetchCoffeeStores();
+  const paths = coffeeStores.map((store) => ({
+    params: { id: store.id },
   }));
+  console.log(paths);
   return {
     paths,
     fallback: true,
@@ -38,7 +37,7 @@ export default function CoffeeStore({ coffeeStore }) {
       </div>
     );
   }
-  const { address, name, neighbourhood, imgUrl } = coffeeStore;
+  const { address, name, imgUrl, neighborhood } = coffeeStore;
   const handleUpvoteButton = () => {
     console.log('upvote button');
   };
@@ -52,14 +51,17 @@ export default function CoffeeStore({ coffeeStore }) {
           <div className={styles.col1}>
             <div className={styles.backToHomeLink}>
               <Link href="/" passHref>
-                <button type="button">back to home</button>
+                <a type="button">← Back to home</a>
               </Link>
             </div>
             <div className={styles.nameWrapper}>
               <h1 className={styles.name}>{name}</h1>
             </div>
             <Image
-              src={imgUrl}
+              src={
+                imgUrl ||
+                'https://images.unsplash.com/photo-1498804103079-a6351b050096?ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&ixlib=rb-1.2.1&auto=format&fit=crop&w=2468&q=80'
+              }
               className={styles.storeImg}
               width={600}
               height={360}
@@ -71,10 +73,12 @@ export default function CoffeeStore({ coffeeStore }) {
               <Image width={24} height={24} src="/static/icons/places.svg" />
               <p className={styles.text}>{address}</p>
             </div>
-            <div className={styles.iconWrapper}>
-              <Image width={24} height={24} src="/static/icons/nearMe.svg" />
-              <p className={styles.text}>{neighbourhood}</p>
-            </div>
+            {neighborhood && (
+              <div className={styles.iconWrapper}>
+                <Image width={24} height={24} src="/static/icons/nearMe.svg" />
+                <p className={styles.text}>{neighborhood}</p>
+              </div>
+            )}
             <div className={styles.iconWrapper}>
               <Image width={24} height={24} src="/static/icons/star.svg" />
               <p className={styles.text}>1</p>
