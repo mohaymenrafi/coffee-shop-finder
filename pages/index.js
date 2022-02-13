@@ -1,9 +1,11 @@
 import Head from 'next/head';
 import Image from 'next/image';
+import { useContext, useEffect } from 'react';
 import Banner from '../components/banner';
 import Card from '../components/card';
 import useTrackLocation from '../hooks/useTrackLocation';
 import { fetchCoffeeStores } from '../lib/coffe-store';
+import { StoreContext, ACTION_TYPES } from '../StoreContext/storeContext';
 import styles from '../styles/Home.module.css';
 
 export async function getStaticProps() {
@@ -15,8 +17,30 @@ export async function getStaticProps() {
   };
 }
 export default function Home({ coffeeStores }) {
-  const { handleTrackLocation, latlong, errorMessage, isLoadingLocation } =
+  const { handleTrackLocation, errorMessage, isLoadingLocation } =
     useTrackLocation();
+  const {
+    dispatch,
+    state: { latlong, coffeeStoresNearme },
+  } = useContext(StoreContext);
+  useEffect(() => {
+    const fetchCoffeeStoresNearme = async () => {
+      if (latlong) {
+        try {
+          const fetchedCoffeeStoresNearme = await fetchCoffeeStores(latlong);
+          dispatch({
+            type: ACTION_TYPES.SET_COFFEE_STORES,
+            payload: { coffeeStoresNearme: fetchedCoffeeStoresNearme },
+          });
+        } catch (err) {
+          console.log(err.message);
+        }
+      }
+    };
+    fetchCoffeeStoresNearme();
+    /*eslint-disable*/
+  }, [latlong]);
+  /*eslint-disable*/
   const handleOnBannerBtnClick = () => {
     handleTrackLocation();
   };
@@ -42,6 +66,29 @@ export default function Home({ coffeeStores }) {
         <div className={styles.heroImage}>
           <Image src="/static/hero-image.png" width={700} height={400} />
         </div>
+        {/* Coffee stores based on location  */}
+        {coffeeStoresNearme.length > 0 && (
+          <>
+            <div className={styles.heading2Wrapper}>
+              <h2 className={styles.heading2}>Coffee Stores Nearme</h2>
+            </div>
+            <div className={styles.cardLayout}>
+              {coffeeStoresNearme.map((store) => (
+                <Card
+                  key={store.id}
+                  shopLink={`/coffee-stores/${store.id}`}
+                  imgUrl={
+                    store.imgUrl ||
+                    'https://images.unsplash.com/photo-1498804103079-a6351b050096?ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&ixlib=rb-1.2.1&auto=format&fit=crop&w=2468&q=80'
+                  }
+                  title={store.name}
+                  className={styles.card}
+                />
+              ))}
+            </div>
+          </>
+        )}
+        {/* Torront coffee stores  */}
         {coffeeStores.length > 0 && (
           <>
             <div className={styles.heading2Wrapper}>

@@ -2,16 +2,18 @@ import Head from 'next/head';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
-import React from 'react';
+import React, { useContext, useEffect, useState } from 'react';
 import cls from 'classnames';
 import styles from '../../styles/coffee-store.module.css';
 import { fetchCoffeeStores } from '../../lib/coffe-store';
+import { isEmpty } from '../../utils';
+import { StoreContext } from '../../StoreContext/storeContext';
 
 export async function getStaticProps({ params }) {
   const coffeeStores = await fetchCoffeeStores();
   return {
     props: {
-      coffeeStore: coffeeStores.find((store) => store.id === params.id),
+      coffeeStore: coffeeStores.find((store) => store.id === params.id) || {},
     },
   };
 }
@@ -28,8 +30,23 @@ export async function getStaticPaths() {
   };
 }
 
-export default function CoffeeStore({ coffeeStore }) {
+export default function CoffeeStore(initialProps) {
   const router = useRouter();
+  const {
+    state: { coffeeStoresNearme },
+  } = useContext(StoreContext);
+  /* eslint-disable react/destructuring-assignment  */
+  /* eslint-disable  react-hooks/exhaustive-deps */
+  const [coffeeStore, setCoffeeStore] = useState(initialProps.coffeeStore);
+  const { id } = router.query;
+  useEffect(() => {
+    if (isEmpty(initialProps.coffeeStore)) {
+      if (coffeeStoresNearme.length) {
+        const fetchedNear = coffeeStoresNearme.find((store) => store.id === id);
+        setCoffeeStore(fetchedNear);
+      }
+    }
+  }, [id]);
   if (router.isFallback) {
     return (
       <div>
