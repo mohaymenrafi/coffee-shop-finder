@@ -11,9 +11,13 @@ import { StoreContext } from '../../StoreContext/storeContext';
 
 export async function getStaticProps({ params }) {
   const coffeeStores = await fetchCoffeeStores();
+
+  const findCoffeeStoresById = coffeeStores.find(
+    (store) => store.id === params.id
+  );
   return {
     props: {
-      coffeeStore: coffeeStores.find((store) => store.id === params.id) || {},
+      coffeeStore: findCoffeeStoresById || {},
     },
   };
 }
@@ -23,7 +27,6 @@ export async function getStaticPaths() {
   const paths = coffeeStores.map((store) => ({
     params: { id: store.id },
   }));
-  console.log(paths);
   return {
     paths,
     fallback: true,
@@ -37,16 +40,48 @@ export default function CoffeeStore(initialProps) {
   } = useContext(StoreContext);
   /* eslint-disable react/destructuring-assignment  */
   /* eslint-disable  react-hooks/exhaustive-deps */
-  const [coffeeStore, setCoffeeStore] = useState(initialProps.coffeeStore);
+  /* eslint-disable  no-shadow */
+  const [coffeeStore, setCoffeeStore] = useState(
+    initialProps.coffeeStore || {}
+  );
   const { id } = router.query;
+
+  const handleAirtable = async (store) => {
+    try {
+      const { id, name, imgUrl, neighborhood, address } = store;
+      const data = {
+        id,
+        name,
+        voting: 0,
+        imgUrl,
+        neighborhood: neighborhood[0] || '',
+        address,
+      };
+      const response = await fetch('/api/createcoffeestore', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data),
+      });
+      const result = await response.json();
+      console.log(result);
+    } catch (err) {
+      console.error('handle airtable error when creating', err);
+    }
+  };
+
   useEffect(() => {
     if (isEmpty(initialProps.coffeeStore)) {
       if (coffeeStoresNearme.length) {
         const fetchedNear = coffeeStoresNearme.find((store) => store.id === id);
         setCoffeeStore(fetchedNear);
+        handleAirtable(fetchedNear);
       }
+    } else {
+      handleAirtable(initialProps.coffeeStore);
     }
-  }, [id]);
+  }, [id, initialProps.coffeeStore, coffeeStoresNearme]);
   if (router.isFallback) {
     return (
       <div>
@@ -56,7 +91,7 @@ export default function CoffeeStore(initialProps) {
   }
   const { address, name, imgUrl, neighborhood } = coffeeStore;
   const handleUpvoteButton = () => {
-    console.log('upvote button');
+    // console.log('upvote button');
   };
   return (
     <div className={styles.layout}>

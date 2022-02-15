@@ -27,10 +27,15 @@ export default function Home({ coffeeStores }) {
     const fetchCoffeeStoresNearme = async () => {
       if (latlong) {
         try {
-          const fetchedCoffeeStoresNearme = await fetchCoffeeStores(latlong);
+          // const fetchedCoffeeStoresNearme = await fetchCoffeeStores(latlong);
+          const response = await fetch(
+            `./api/getcoffeestoresbylocation?latlong=${latlong}&limit=6`
+          );
+          const result = await response.json();
+
           dispatch({
             type: ACTION_TYPES.SET_COFFEE_STORES,
-            payload: { coffeeStoresNearme: fetchedCoffeeStoresNearme },
+            payload: { coffeeStoresNearme: result },
           });
         } catch (err) {
           console.log(err.message);
