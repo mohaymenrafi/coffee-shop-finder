@@ -17,7 +17,7 @@ const useTrackLocation = () => {
     setIsLoadingLocation(false);
   };
   const error = () => {
-    setErrorMessage('Unable to retrive your location');
+    setErrorMessage('Unable to retrive your location, please try again!');
     setIsLoadingLocation(false);
   };
 
