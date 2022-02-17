@@ -1,13 +1,15 @@
+import React, { useContext, useEffect, useState } from 'react';
+import { useRouter } from 'next/router';
 import Head from 'next/head';
 import Image from 'next/image';
 import Link from 'next/link';
-import { useRouter } from 'next/router';
-import React, { useContext, useEffect, useState } from 'react';
+import useSWR from 'swr';
 import cls from 'classnames';
+import axios from 'axios';
 import styles from '../../styles/coffee-store.module.css';
 import { fetchCoffeeStores } from '../../lib/coffe-store';
-import { isEmpty } from '../../utils';
 import { StoreContext } from '../../StoreContext/storeContext';
+import { fetcher, isEmpty } from '../../utils';
 
 export async function getStaticProps({ params }) {
   const coffeeStores = await fetchCoffeeStores();
@@ -33,117 +35,156 @@ export async function getStaticPaths() {
   };
 }
 
+/* eslint-disable react/destructuring-assignment  */
+/* eslint-disable  react-hooks/exhaustive-deps */
+/* eslint-disable  react-hooks/rules-of-hooks */
+/* eslint-disable  no-shadow */
 export default function CoffeeStore(initialProps) {
   const router = useRouter();
-  const {
-    state: { coffeeStoresNearme },
-  } = useContext(StoreContext);
-  /* eslint-disable react/destructuring-assignment  */
-  /* eslint-disable  react-hooks/exhaustive-deps */
-  /* eslint-disable  no-shadow */
+  const { id } = router.query;
   const [coffeeStore, setCoffeeStore] = useState(
     initialProps.coffeeStore || {}
   );
-  const { id } = router.query;
+  const {
+    state: { coffeeStoresNearme },
+  } = useContext(StoreContext);
 
-  const handleAirtable = async (store) => {
+  const handleCreateCoffeeSotre = async (store) => {
     try {
       const { id, name, imgUrl, neighborhood, address } = store;
-      const data = {
-        id,
-        name,
-        voting: 0,
-        imgUrl,
-        neighborhood: neighborhood[0] || '',
-        address,
-      };
       const response = await fetch('/api/createcoffeestore', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(data),
+        body: JSON.stringify({
+          id,
+          name,
+          voting: 0,
+          imgUrl,
+          neighborhood: neighborhood[0] || '',
+          address,
+        }),
       });
-      const result = await response.json();
-      console.log(result);
+      await response.json();
     } catch (err) {
-      console.error('handle airtable error when creating', err);
+      console.error('Error on handleCreateCoffee Store', { err });
     }
   };
 
   useEffect(() => {
     if (isEmpty(initialProps.coffeeStore)) {
-      if (coffeeStoresNearme.length) {
+      if (coffeeStoresNearme.length > 0) {
         const fetchedNear = coffeeStoresNearme.find((store) => store.id === id);
-        setCoffeeStore(fetchedNear);
-        handleAirtable(fetchedNear);
+        if (fetchedNear) {
+          setCoffeeStore(fetchedNear);
+          handleCreateCoffeeSotre(fetchedNear);
+        }
       }
     } else {
-      handleAirtable(initialProps.coffeeStore);
+      handleCreateCoffeeSotre(initialProps.coffeeStore);
     }
   }, [id, initialProps.coffeeStore, coffeeStoresNearme]);
+
+  // info destructure
+  const {
+    address = '',
+    name = '',
+    imgUrl = '',
+    neighborhood = '',
+  } = coffeeStore;
+
+  const [voting, setVoting] = useState(0);
+  console.log(id);
+  const { data } = useSWR(`/api/getCoffeeStoreById?id=${id}`, fetcher);
+
+  useEffect(() => {
+    if (data && data.length > 0) {
+      setCoffeeStore(data[0]);
+      setVoting(data[0].voting);
+    }
+  }, [data]);
+
+  // Loading
   if (router.isFallback) {
     return (
-      <div>
-        <h2>Loading...</h2>
+      <div style={{ height: '100vh' }}>
+        <h2>Loading Store ...</h2>
       </div>
     );
   }
-  const { address, name, imgUrl, neighborhood } = coffeeStore;
-  const handleUpvoteButton = () => {
-    // console.log('upvote button');
+  // vote button function
+  const handleUpvoteButton = async () => {
+    try {
+      const response = await axios.put('/api/updateVoting', { id });
+      const result = await response.data;
+      if (result && result.length > 0) {
+        const updateVote = voting + 1;
+        setVoting(updateVote);
+      }
+    } catch (err) {
+      console.error('Error in handleUpvote', { err });
+    }
   };
+
   return (
     <div className={styles.layout}>
       <Head>
         <title>{name}</title>
       </Head>
       <main>
-        <div className={styles.container}>
-          <div className={styles.col1}>
-            <div className={styles.backToHomeLink}>
-              <Link href="/" passHref>
-                <a type="button">← Back to home</a>
-              </Link>
-            </div>
-            <div className={styles.nameWrapper}>
-              <h1 className={styles.name}>{name}</h1>
-            </div>
-            <Image
-              src={
-                imgUrl ||
-                'https://images.unsplash.com/photo-1498804103079-a6351b050096?ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&ixlib=rb-1.2.1&auto=format&fit=crop&w=2468&q=80'
-              }
-              className={styles.storeImg}
-              width={600}
-              height={360}
-            />
-          </div>
-
-          <div className={cls('glass', styles.col2)}>
-            <div className={styles.iconWrapper}>
-              <Image width={24} height={24} src="/static/icons/places.svg" />
-              <p className={styles.text}>{address}</p>
-            </div>
-            {neighborhood && (
-              <div className={styles.iconWrapper}>
-                <Image width={24} height={24} src="/static/icons/nearMe.svg" />
-                <p className={styles.text}>{neighborhood}</p>
+        {imgUrl ? (
+          <div className={styles.container}>
+            <div className={styles.col1}>
+              <div className={styles.backToHomeLink}>
+                <Link href="/" passHref>
+                  <a type="button">← Back to home</a>
+                </Link>
               </div>
-            )}
-            <div className={styles.iconWrapper}>
-              <Image width={24} height={24} src="/static/icons/star.svg" />
-              <p className={styles.text}>1</p>
+              <div className={styles.nameWrapper}>
+                <h1 className={styles.name}>{name}</h1>
+              </div>
+              <Image
+                src={imgUrl}
+                className={styles.storeImg}
+                width={600}
+                height={360}
+              />
             </div>
-            <button
-              type="button"
-              className={styles.upvoteButton}
-              onClick={handleUpvoteButton}
-            >
-              Up Vote
-            </button>
+
+            <div className={cls('glass', styles.col2)}>
+              <div className={styles.iconWrapper}>
+                <Image width={24} height={24} src="/static/icons/places.svg" />
+                <p className={styles.text}>{address}</p>
+              </div>
+              {neighborhood && (
+                <div className={styles.iconWrapper}>
+                  <Image
+                    width={24}
+                    height={24}
+                    src="/static/icons/nearMe.svg"
+                  />
+                  <p className={styles.text}>{neighborhood}</p>
+                </div>
+              )}
+              <div className={styles.iconWrapper}>
+                <Image width={24} height={24} src="/static/icons/star.svg" />
+                <p className={styles.text}>{voting}</p>
+              </div>
+              <button
+                type="button"
+                className={styles.upvoteButton}
+                onClick={handleUpvoteButton}
+              >
+                Up Vote
+              </button>
+            </div>
           </div>
-        </div>
+        ) : (
+          <div style={{ height: '100vh' }}>
+            <h2>Loading Store ...</h2>
+          </div>
+        )}
       </main>
     </div>
   );

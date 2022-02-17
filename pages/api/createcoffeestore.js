@@ -1,19 +1,17 @@
-import { table, getSimplifiedRecord } from '../../lib/airTable';
+import {
+  table,
+  getSimplifiedRecord,
+  findCoffeeStoreById,
+} from '../../lib/airTable';
 
 const createCoffeeStore = async (req, res) => {
   if (req.method === 'POST') {
     const { id, name, address, voting, neighborhood, imgUrl } = req.body;
-    console.log('type', typeof id);
-    console.log(req.body);
     try {
       if (id) {
-        const findCoffeeStoreRecord = await table
-          .select({
-            filterByFormula: `id="${id}"`,
-          })
-          .firstPage();
-        if (findCoffeeStoreRecord.length !== 0) {
-          res.json(getSimplifiedRecord(findCoffeeStoreRecord));
+        const coffeeStoreRecord = await findCoffeeStoreById(id);
+        if (coffeeStoreRecord.length !== 0) {
+          res.status(200).json(coffeeStoreRecord);
         } else if (name) {
           const createRecord = await table.create([
             {

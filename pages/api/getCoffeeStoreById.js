@@ -1,19 +1,14 @@
-import { getSimplifiedRecord, table } from '../../lib/airTable';
+import { findCoffeeStoreById } from '../../lib/airTable';
 
 const getCoffeeStoreById = async (req, res) => {
   const { id } = req.query;
   try {
     if (id) {
-      const findCoffeeStoreRecord = await table
-        .select({
-          filterByFormula: `id="${id}"`,
-        })
-        .firstPage();
-      if (findCoffeeStoreRecord.length !== 0) {
-        const result = getSimplifiedRecord(findCoffeeStoreRecord);
-        res.status(200).json(result);
+      const record = await findCoffeeStoreById(id);
+      if (record.length !== 0) {
+        res.status(200).json(record);
       } else {
-        res.json('No match found with this id');
+        res.status(500).json('ID did not match with any listings');
       }
     } else {
       res.send('no valid id found');
