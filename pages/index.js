@@ -72,7 +72,7 @@ export default function Home({ coffeeStores }) {
           <Image src="/static/hero-image.png" width={700} height={400} />
         </div>
         {/* Coffee stores based on location  */}
-        {coffeeStoresNearme.length > 0 ? (
+        {coffeeStoresNearme.length > 0 && (
           <>
             <div className={styles.heading2Wrapper}>
               <h2 className={styles.heading2}>Coffee Stores Nearme</h2>
@@ -92,10 +92,6 @@ export default function Home({ coffeeStores }) {
               ))}
             </div>
           </>
-        ): (
-          <div>
-            <h2 className={styles.heading2}>Hard luch! No coffee store close to your area!</h2>
-          </div>
         )}
         
         {/* Torront coffee stores  */}
