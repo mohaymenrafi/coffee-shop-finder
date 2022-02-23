@@ -18,6 +18,9 @@ const useTrackLocation = () => {
   };
   const error = () => {
     setErrorMessage('Unable to retrive your location, please try again!');
+    console.error(
+      'Unable to find your location, please check if you have given access to retrive the location'
+    );
     setIsLoadingLocation(false);
   };
 
